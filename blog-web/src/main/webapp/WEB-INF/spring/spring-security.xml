@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.0.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd">
+
+	<context:annotation-config></context:annotation-config>
+		
+	<beans:import resource="spring-datasource.xml"/>
+	
+	<beans:bean name="loginService" class="com.akifbatur.blog.persist.service.impl.LoginServiceImpl"></beans:bean>
+	<beans:bean name="userRepository" class="com.akifbatur.blog.persist.repository.impl.UserRepositoryImpl"></beans:bean>
+	<beans:bean name="customAuthenticationSuccessHandler" class="com.akifbatur.blog.web.component.CustomAuthenticationSuccessHandler"></beans:bean>
+	<beans:bean name="customAuthenticationFailureHandler" class="com.akifbatur.blog.web.component.CustomAuthenticationFailureHandler"></beans:bean>
+	
+	<jdbc:initialize-database data-source="dataSource">
+		<jdbc:script location="classpath:init-db.sql" />
+	</jdbc:initialize-database>
+	
+	<http pattern="/resources/**" security="none"/>
+	
+	<!-- Enable use-expressions -->
+	<http auto-config="true" use-expressions="true" >
+	
+		<intercept-url pattern="/admin**" access="hasRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/author**" access="hasRole('ROLE_USER')" />
+		
+		<form-login
+		    login-page="/login"
+		    login-processing-url="/login"
+		    username-parameter="username"
+		    password-parameter="password"
+		    authentication-success-handler-ref="customAuthenticationSuccessHandler"
+		    authentication-failure-handler-ref="customAuthenticationFailureHandler"
+		/>
+		
+		<logout 
+			logout-success-url="/"
+			invalidate-session="true"
+			logout-url="/logout"
+			delete-cookies="JSESSIONID"
+		/>
+		
+		<remember-me 
+       		token-validity-seconds="1209600"
+			key="secret_remember_me"
+			remember-me-parameter="remember-me"
+			data-source-ref="dataSource" 
+		/>
+		
+		<csrf />
+	</http>
+	
+	<authentication-manager>
+		<authentication-provider user-service-ref="loginService" >
+			<password-encoder hash="bcrypt" />
+			<password-encoder ref="encoder"/>
+		</authentication-provider>
+	</authentication-manager>
+	
+	<beans:bean id="encoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+		<beans:constructor-arg name="strength" value="10"/>
+	</beans:bean>
+  
+</beans:beans>
