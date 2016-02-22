@@ -1,2 +1,1 @@
-# blog-batur.rhcloud.com
 
